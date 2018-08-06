@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CursorAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.wisemo.myinventory.data.ItemContract;
@@ -62,6 +63,7 @@ public class ProductsCursorAdapter extends CursorAdapter {
     public void bindView(View view, final Context context, Cursor cursor) {
         // Find individual views that we want to modify in the list item layout
         TextView itemTypeTv = view.findViewById(R.id.type_tv);
+        ImageView itemImageView = view.findViewById(R.id.item_thumb);
         TextView itemNameTv = view.findViewById(R.id.name_tv);
         TextView itemDescriptionTv = view.findViewById(R.id.description_tv);
         TextView itemPriceTv = view.findViewById(R.id.price_tv);
@@ -74,6 +76,7 @@ public class ProductsCursorAdapter extends CursorAdapter {
 
         // Find the columns of item attributes that we're interested in
         final int idColumnIndex = cursor.getColumnIndex(ItemContract.ItemEntry._ID);
+        int imageColumnIndex = cursor.getColumnIndex(ItemContract.ItemEntry.COLUMN_ITEM_IMAGE);
         int typeColumnIndex = cursor.getColumnIndex(ItemContract.ItemEntry.COLUMN_ITEM_CATEGORY_TYPE);
         int nameColumnIndex = cursor.getColumnIndex(ItemContract.ItemEntry.COLUMN_ITEM_PRODUCT_NAME);
         int descriptionColumnIndex = cursor.getColumnIndex(ItemContract.ItemEntry.COLUMN_ITEM_DESCRIPTION);
@@ -84,6 +87,8 @@ public class ProductsCursorAdapter extends CursorAdapter {
 
         // Read the item attributes from the Cursor for the current item
         final String itemId = cursor.getString(idColumnIndex);
+        String image = cursor.getString(imageColumnIndex);
+        Uri imageUri = Uri.parse(image);
         int itemType = cursor.getInt(typeColumnIndex);
         String itemName = cursor.getString(nameColumnIndex);
         String itemDescription = cursor.getString(descriptionColumnIndex);
@@ -129,6 +134,7 @@ public class ProductsCursorAdapter extends CursorAdapter {
                 itemTypeTv.setText(R.string.type_casual);
                 break;
         }
+        itemImageView.setImageURI(imageUri);
         itemNameTv.setText(itemName);
         itemDescriptionTv.setText(itemDescription);
         itemPriceTv.setText(itemPrice);

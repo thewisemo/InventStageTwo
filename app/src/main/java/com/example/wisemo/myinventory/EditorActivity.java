@@ -6,9 +6,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -38,8 +35,6 @@ import android.widget.Toast;
 import com.example.wisemo.myinventory.data.ItemContract.ItemEntry;
 import com.theartofdev.edmodo.cropper.CropImage;
 import com.theartofdev.edmodo.cropper.CropImageView;
-
-import java.io.ByteArrayOutputStream;
 
 public class EditorActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
@@ -79,6 +74,8 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     private Button incQuantityBtn;
     /* Item Image View*/
     private ImageView mImageView;
+
+    private Uri imageUri;
 
     /**
      * Type of the item. The possible valid values are in the ItemContract.java file:
@@ -223,15 +220,15 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             Uri imageUri = data.getData();
             CropImage.activity(imageUri)
                     .setGuidelines(CropImageView.Guidelines.ON) // Enable image guidelines
-                    .setAspectRatio(1, 1) // Squared image
+                    .setAspectRatio(mImageView.getWidth(), mImageView.getHeight()) //
                     .start(this);
         }
         if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
             CropImage.ActivityResult result = CropImage.getActivityResult(data);
             if (resultCode == RESULT_OK) {
-                Uri resultUri = result.getUri();
+                imageUri = result.getUri();
                 // Setting the item image view to the choosen image from gallery
-                mImageView.setImageURI(resultUri);
+                mImageView.setImageURI(imageUri);
 
             } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
                 Exception error = result.getError();
@@ -240,6 +237,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
         super.onActivityResult(requestCode, resultCode, data);
     }
+
 
     /* Setup the dropdown spinner that allows the user to select the item Type. */
     private void setupTypeSpinner() {
@@ -359,16 +357,23 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         String itemPriceString = mPriceEditText.getText().toString().trim();
         String itemQuantityString = mQuantityEditText.getText().toString().trim();
         // TODO show the supplier phone number once the user select the supplier name_tv from its spinner
+        String itemSupplierString = mSupplierNameSpinner.toString();
         String itemSupplierPhoneString = mSupplierPhoneNumberEditText.getText().toString().trim();
 
-        // Item ImageView to byte
-        byte[] imageByteArray = imageViewToByte(mImageView);
+        String itemImageString = "";
+        if (imageUri != null) {
+            itemImageString = imageUri.toString();
+        }
 
         // Check if this is supposed to be a new item
         // and check if all the fields in the editor are blank
         if (mCurrentItemUri == null &&
-                TextUtils.isEmpty(itemNameString) && TextUtils.isEmpty(itemDescriptionString) &&
-                TextUtils.isEmpty(itemPriceString) && TextUtils.isEmpty(itemQuantityString)) {
+                TextUtils.isEmpty(itemNameString) ||
+                TextUtils.isEmpty(itemDescriptionString) ||
+                TextUtils.isEmpty(itemPriceString) ||
+                TextUtils.isEmpty(itemQuantityString) ||
+                TextUtils.isEmpty(itemSupplierPhoneString) ||
+                TextUtils.isEmpty(itemSupplierString)) {
             // Since no fields were modified, we can return early without creating a new item.
             // No need to create ContentValues and no need to do any ContentProvider operations.
             return;
@@ -378,24 +383,26 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         // and product item attributes from the editor are the values.
         ContentValues values = new ContentValues();
         values.put(ItemEntry.COLUMN_ITEM_CATEGORY_TYPE, mType);
-        values.put(ItemEntry.COLUMN_ITEM_IMAGE, imageByteArray);
+        values.put(ItemEntry.COLUMN_ITEM_IMAGE, itemImageString);
         values.put(ItemEntry.COLUMN_ITEM_PRODUCT_NAME, itemNameString);
         values.put(ItemEntry.COLUMN_ITEM_DESCRIPTION, itemDescriptionString);
         // If the price is not provided by the user, don't try to parse the string into an
         // integer value. Use 80 by default.
-        int price = 80;
-        if (!TextUtils.isEmpty(itemPriceString)) {
-            price = Integer.parseInt(itemPriceString);
+        if (!TextUtils.isEmpty(itemPriceString) && Integer.parseInt(itemPriceString) < 80) {
+            Toast.makeText(this, "The price must be higher than 80 EGP",
+                    Toast.LENGTH_SHORT).show();
+            return;
         }
-        values.put(ItemEntry.COLUMN_ITEM_PRICE, price);
+        values.put(ItemEntry.COLUMN_ITEM_PRICE, itemPriceString);
         values.put(ItemEntry.COLUMN_ITEM_AVAILABILITY, mInStock);
         // If the quantity is not provided by the user, don't try to parse the string into an
         // integer value. Use 50 by default.
-        int quantity = 50;
-        if (!TextUtils.isEmpty(itemQuantityString)) {
-            quantity = Integer.parseInt(itemQuantityString);
+        if (!TextUtils.isEmpty(itemQuantityString) && Integer.parseInt(itemQuantityString) < 50) {
+            Toast.makeText(this, "The quantity must be higher than 50 piece",
+                    Toast.LENGTH_SHORT).show();
+            return;
         }
-        values.put(ItemEntry.COLUMN_ITEM_QUANTITY, quantity);
+        values.put(ItemEntry.COLUMN_ITEM_QUANTITY, itemQuantityString);
         values.put(ItemEntry.COLUMN_ITEM_SUPPLIER_NAME, mSupplierName);
         values.put(ItemEntry.COLUMN_ITEM_SUPPLIER_PHONE_NUMBER, itemSupplierPhoneString);
 
@@ -435,12 +442,6 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         }
     }
 
-    public byte[] imageViewToByte(ImageView image) {
-        Bitmap bitmap = ((BitmapDrawable) image.getDrawable()).getBitmap();
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-        return stream.toByteArray();
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -604,9 +605,8 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             int supplierPhoneColumnIndex = cursor.getColumnIndex(ItemEntry.COLUMN_ITEM_SUPPLIER_PHONE_NUMBER);
 
             // Extract out the value from the Cursor for the given column index
-            // Convert ByteArray to Bitmap
-            byte[] image = cursor.getBlob(imageColumnIndex);
-            Bitmap bitmap = BitmapFactory.decodeByteArray(image, 1, image.length);
+            String image = cursor.getString(imageColumnIndex);
+            imageUri = Uri.parse(image);
 
             int type = cursor.getInt(typeColumnIndex);
             String name = cursor.getString(nameColumnIndex);
@@ -618,7 +618,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             final int supplierPhone = cursor.getInt(supplierPhoneColumnIndex);
 
             // Update the views on the screen with the values from the database
-            mImageView.setImageBitmap(Bitmap.createScaledBitmap(bitmap, mImageView.getWidth(), mImageView.getHeight(), false));
+            mImageView.setImageURI(imageUri);
             mProductNameEditText.setText(name);
             mDescriptionEditText.setText(description);
             mPriceEditText.setText(Integer.toString(price));

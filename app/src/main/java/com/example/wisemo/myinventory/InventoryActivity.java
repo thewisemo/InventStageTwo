@@ -155,15 +155,14 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
      * Helper method to delete all items in the database.
      */
     private void deleteAllItems() {
-        int rowsDeleted = getContentResolver().delete(ItemEntry.CONTENT_URI, null, null);
-        Log.v("InventoryActivity", rowsDeleted + " rows deleted from inventory database");
+        getContentResolver().delete(ItemEntry.CONTENT_URI, null, null);
     }
 
     private void showDeleteConfirmationDialog() {
         // Create an AlertDialog.Builder and set the message, and click listeners
         // for the positive and negative buttons on the dialog.
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage(R.string.delete_dialog_msg);
+        builder.setMessage(R.string.delete_all_msg);
         builder.setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 // User clicked the "Delete" button, so delete the item.
@@ -191,6 +190,7 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
         // Define a projection that specifies the columns from the table we care about.
         String[] projection = {
                 ItemEntry._ID,
+                ItemEntry.COLUMN_ITEM_IMAGE,
                 ItemEntry.COLUMN_ITEM_CATEGORY_TYPE,
                 ItemEntry.COLUMN_ITEM_PRODUCT_NAME,
                 ItemEntry.COLUMN_ITEM_DESCRIPTION,
