@@ -28,7 +28,7 @@
     <!-- Style for an EditText field in the editor -->
     <style name="EditorFieldStyle">
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_width">wrap_content</item>
         <item name="android:textAppearance">?android:textAppearanceMedium</item>
     </style>
 
@@ -40,6 +40,33 @@
         <item name="android:paddingRight">16dp</item>
         <item name="android:paddingTop">16dp</item>
         <item name="android:textAppearance">?android:textAppearanceSmall</item>
+    </style>
+
+    <!--Item Name-->
+    <style name="ItemName">
+        <item name="android:textSize">@dimen/twentySp</item>
+        <item name="android:textColor">@android:color/black</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!--Item Price-->
+    <style name="ItemPrice">
+        <item name="android:textSize">@dimen/twentySp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@android:color/holo_red_dark</item>
+    </style>
+
+    <!--Item Quantity-->
+    <style name="ItemQuantity">
+        <item name="android:textSize">@dimen/twentySp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@android:color/holo_blue_dark</item>
+    </style>
+
+    <!--Item Description Text-->
+    <style name="ItemDescription">
+        <item name="android:textSize">@dimen/sixteenSp</item>
+        <item name="android:textColor">@color/colorPrimaryDark</item>
     </style>
 
 </resources>

@@ -1,28 +1,39 @@
 package com.example.wisemo.myinventory;
 
+import android.content.ContentUris;
+import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
+import android.widget.ListView;
+import android.widget.Toast;
 
-import com.example.wisemo.myinventory.data.ItemDbHelper;
 import com.example.wisemo.myinventory.data.ItemContract.ItemEntry;
 
-public class InventoryActivity extends AppCompatActivity {
+public class InventoryActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
-    // Create an instance from the ItemDbHelper
-    private ItemDbHelper mDbHelper;
+    // Loader constant
+    private static final int ITEM_LOADER = 0;
+
+    // CursorAdapter global variable
+    ProductsCursorAdapter mCursorAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,103 +49,56 @@ public class InventoryActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-        // Instantiate the mDbHelper
-        mDbHelper = new ItemDbHelper(this);
+
+        // Find the listView which will be populated with the item data.
+        ListView itemsListView = findViewById(R.id.list);
+
+        // Find & setting the empty view layout
+        View emptyView = findViewById(R.id.empty_view);
+        itemsListView.setEmptyView(emptyView);
+
+        // Setup an adapter to create a list item for each row of products items data in the Cursor.
+        // There is no item data till the loader finishes so Cursor is passed as null.
+        mCursorAdapter = new ProductsCursorAdapter(this, null);
+        itemsListView.setAdapter(mCursorAdapter);
+
+//        // Item click listener
+//        itemsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+//                // Intent to open EditorActivity
+//                Intent intent = new Intent(InventoryActivity.this, EditorActivity.class);
+//                // Detect the URI that represent which item was clicked from the list
+//                Uri currentItemUri = ContentUris.withAppendedId(ItemEntry.CONTENT_URI, id);
+//                // Set the URI on the data field of the intent
+//                intent.setData(currentItemUri);
+//                // Launch the EditorActivity
+//                startActivity(intent);
+//            }
+//        });
+
+        // Prepare the loader.  Either re-connect with an existing one,
+        // or start a new one.
+        getSupportLoaderManager().initLoader(ITEM_LOADER, null, this);
     }
-    /* @Override onStart method */
-    @Override
-    protected void onStart() {
-        super.onStart();
-        displayDatabaseInfo();
-    }
 
-    /**
-     * Helper method to display information in the onscreen TextView about the state of
-     * the products items database.
-     */
-    private void displayDatabaseInfo() {
-
-        // The projection that specifies which columns from the database to be viewed
-        String[] projection = {
-                ItemEntry._ID,
-                ItemEntry.COLUMN_ITEM_CATEGORY_TYPE,
-                ItemEntry.COLUMN_ITEM_PRODUCT_NAME,
-                ItemEntry.COLUMN_ITEM_DESCRIPTION,
-                ItemEntry.COLUMN_ITEM_PRICE,
-                ItemEntry.COLUMN_ITEM_AVAILABILITY,
-                ItemEntry.COLUMN_ITEM_QUANTITY,
-                ItemEntry.COLUMN_ITEM_SUPPLIER_NAME,
-                ItemEntry.COLUMN_ITEM_SUPPLIER_PHONE_NUMBER };
-
-        // Perform a query on the provider using the ContentResolver.
-        // Use the {@link ItemEntry.CONTENT_URI} to access the item data.
-        Cursor cursor = getContentResolver().query(
-                ItemEntry.CONTENT_URI,    // The content URI
-                projection,               // The columns that return for each row
-                null,            // Selection criteria
-                null,         // SelectionArgs criteria
-                null);           // The sort order for returned rows
-
-        // Assign the textView which will display the cursor query.
-        TextView displayView = findViewById(R.id.item_text_view);
-
-        try {
-            // Create a header in the Text View that looks like this:
-            //
-            // The items table contains <number of rows in Cursor> items.
-            // _id - type - product_name - description - availability - price - quantity - supplier_name - phone_number
-            //
-            // In the while loop below, iterate through the rows of the cursor and display
-            // the information from each column in this order.
-            displayView.setText("The items table contains " + cursor.getCount() + " items.\n\n");
-            displayView.append(ItemEntry._ID + " - " +
-                    ItemEntry.COLUMN_ITEM_CATEGORY_TYPE + " - " +
-                    ItemEntry.COLUMN_ITEM_PRODUCT_NAME + " - " +
-                    ItemEntry.COLUMN_ITEM_DESCRIPTION + " - " +
-                    ItemEntry.COLUMN_ITEM_PRICE + " - " +
-                    ItemEntry.COLUMN_ITEM_AVAILABILITY + " - " +
-                    ItemEntry.COLUMN_ITEM_QUANTITY + " - " +
-                    ItemEntry.COLUMN_ITEM_SUPPLIER_NAME + " - " +
-                    ItemEntry.COLUMN_ITEM_SUPPLIER_PHONE_NUMBER + "\n");
-
-            // Figure out the index of each column
-            int idColumnIndex = cursor.getColumnIndex(ItemEntry._ID);
-            int itemTypeColumnIndex = cursor.getColumnIndex(ItemEntry.COLUMN_ITEM_CATEGORY_TYPE);
-            int itemNameColumnIndex = cursor.getColumnIndex(ItemEntry.COLUMN_ITEM_PRODUCT_NAME);
-            int itemDescriptionColumnIndex = cursor.getColumnIndex(ItemEntry.COLUMN_ITEM_DESCRIPTION);
-            int itemPriceColumnIndex = cursor.getColumnIndex(ItemEntry.COLUMN_ITEM_PRICE);
-            int itemAvailabilityColumnIndex = cursor.getColumnIndex(ItemEntry.COLUMN_ITEM_AVAILABILITY);
-            int itemQuantityColumnIndex = cursor.getColumnIndex(ItemEntry.COLUMN_ITEM_QUANTITY);
-            int itemSupplierNameColumnIndex = cursor.getColumnIndex(ItemEntry.COLUMN_ITEM_SUPPLIER_NAME);
-            int itemSupplierPhoneColumnIndex = cursor.getColumnIndex(ItemEntry.COLUMN_ITEM_SUPPLIER_PHONE_NUMBER);
-
-            // Iterate through all the returned rows in the cursor
-            while (cursor.moveToNext()) {
-                // Use that index to extract the String or Int value of the word
-                // at the current row the cursor is on.
-                int currentID = cursor.getInt(idColumnIndex);
-                int currentItemType = cursor.getInt(itemTypeColumnIndex);
-                String currentItemName = cursor.getString(itemNameColumnIndex);
-                String currentItemDescription = cursor.getString(itemDescriptionColumnIndex);
-                int currentItemPrice = cursor.getInt(itemPriceColumnIndex);
-                int currentItemAvailability = cursor.getInt(itemAvailabilityColumnIndex);
-                int currentItemQuantity = cursor.getInt(itemQuantityColumnIndex);
-                String currentItemSupplierName = cursor.getString(itemSupplierNameColumnIndex);
-                long currentItemSupplierPhone = cursor.getLong(itemSupplierPhoneColumnIndex);
-                // Display the values from each column of the current row in the cursor in the TextView
-                displayView.append(("\n" + currentID + " - " +
-                        currentItemType + " - " +
-                        currentItemName + " - " +
-                        currentItemDescription + " - " +
-                        currentItemPrice + " - " +
-                        currentItemAvailability + " - " +
-                        currentItemQuantity + " - " +
-                        currentItemSupplierName + " - " +
-                        currentItemSupplierPhone));
-            }
-        } finally {
-            // cursor close
-            cursor.close();
+    // This helper method to reduce the item quantity by one item.
+    public void quantitySale(int itemID, int itemQuantity) {
+        itemQuantity--;
+        if (itemQuantity >= 50) {
+            ContentValues values = new ContentValues();
+            values.put(ItemEntry.COLUMN_ITEM_QUANTITY, itemQuantity);
+            Uri updateUri = ContentUris.withAppendedId(ItemEntry.CONTENT_URI, itemID);
+            int rowsAffected = getContentResolver().update(updateUri, values, null, null);
+            Toast.makeText(this, "Quantity was reduced by one piece", Toast.LENGTH_SHORT).show();
+            // Log to show the number of affected rows in the inventory database
+            Log.d("Log msg", "rowsAffected " + rowsAffected + " with ID " + itemID + " Which Quantity value is " + itemQuantity + " has been reduced.");
+        } else if (itemQuantity >= 0) {
+            ContentValues values = new ContentValues();
+            values.put(ItemEntry.COLUMN_ITEM_QUANTITY, itemQuantity);
+            Uri updateUri = ContentUris.withAppendedId(ItemEntry.CONTENT_URI, itemID);
+            getContentResolver().update(updateUri, values, null, null);
+            Toast.makeText(this, "Minimum quantity reached, Please order from the supplier", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -178,9 +142,80 @@ public class InventoryActivity extends AppCompatActivity {
                 aboutDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
                 aboutDialog.show();
                 break;
+            case R.id.action_delete_all_entries:
+                showDeleteConfirmationDialog();
+                return true;
             default:
                 break;
         }
         return true;
+    }
+
+    /**
+     * Helper method to delete all items in the database.
+     */
+    private void deleteAllItems() {
+        int rowsDeleted = getContentResolver().delete(ItemEntry.CONTENT_URI, null, null);
+        Log.v("InventoryActivity", rowsDeleted + " rows deleted from inventory database");
+    }
+
+    private void showDeleteConfirmationDialog() {
+        // Create an AlertDialog.Builder and set the message, and click listeners
+        // for the positive and negative buttons on the dialog.
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(R.string.delete_dialog_msg);
+        builder.setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User clicked the "Delete" button, so delete the item.
+                deleteAllItems();
+            }
+        });
+        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User clicked the "Cancel" button, so dismiss the dialog
+                // and continue editing the item.
+                if (dialog != null) {
+                    dialog.dismiss();
+                }
+            }
+        });
+
+        // Create and show the AlertDialog
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+    }
+
+    @NonNull
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
+        // Define a projection that specifies the columns from the table we care about.
+        String[] projection = {
+                ItemEntry._ID,
+                ItemEntry.COLUMN_ITEM_CATEGORY_TYPE,
+                ItemEntry.COLUMN_ITEM_PRODUCT_NAME,
+                ItemEntry.COLUMN_ITEM_DESCRIPTION,
+                ItemEntry.COLUMN_ITEM_PRICE,
+                ItemEntry.COLUMN_ITEM_QUANTITY,
+                ItemEntry.COLUMN_ITEM_SUPPLIER_NAME,
+                ItemEntry.COLUMN_ITEM_SUPPLIER_PHONE_NUMBER};
+        // This loader will execute the ContentProvider's query method on a background thread
+        return new CursorLoader(this,      // Parent activity context
+                ItemEntry.CONTENT_URI,             // Provider content URI to query
+                projection,                        // Columns to include in the resulting cursor
+                null,                     // No selection clause
+                null,                  // No selection arguments
+                null);                   // Default sort order
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
+        // Update {@link ProductsCursorAdapter} with this new cursor containing updated item data.
+        mCursorAdapter.swapCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
+        // This callback called when data need to be deleted
+        mCursorAdapter.swapCursor(null);
     }
 }

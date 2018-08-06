@@ -2,6 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.wisemo.myinventory">
 
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- Use camera permission -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -17,7 +24,6 @@
             </intent-filter>
         </activity>
         <activity android:name=".EditorActivity"
-            android:label="@string/editor_activity_title_new_product"
             android:theme="@style/EditorTheme" >
             <!-- Parent activity meta-data to support 4.0 and lower -->
             <meta-data
@@ -29,6 +35,10 @@
             android:name=".data.ItemProvider"
             android:authorities="com.example.wisemo.myinventory"
             android:exported="false" />
+        <!-- Cropping activity -->
+        <activity
+            android:name="com.theartofdev.edmodo.cropper.CropImageActivity"
+            android:theme="@style/Base.Theme.AppCompat" />
     </application>
 
 </manifest>

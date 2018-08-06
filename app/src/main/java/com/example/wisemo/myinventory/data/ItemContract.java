@@ -12,9 +12,9 @@ public final class ItemContract {
     }
 
     /**
-     * The "Content authority" is a name for the entire content provider, similar to the
-     * relationship between a domain name and its website.  A convenient string to use for the
-     * content authority is the package name for the app, which is guaranteed to be unique on the
+     * The "Content authority" is a name_tv for the entire content provider, similar to the
+     * relationship between a domain name_tv and its website.  A convenient string to use for the
+     * content authority is the package name_tv for the app, which is guaranteed to be unique on the
      * device.
      */
     public static final String CONTENT_AUTHORITY = "com.example.wisemo.myinventory";
@@ -60,6 +60,7 @@ public final class ItemContract {
          */
         public static final String _ID = BaseColumns._ID;
 
+        public static final String COLUMN_ITEM_IMAGE = "image";
         public static final String COLUMN_ITEM_CATEGORY_TYPE = "type";
         public static final String COLUMN_ITEM_PRODUCT_NAME = "product_name";
         public static final String COLUMN_ITEM_DESCRIPTION = "description";
@@ -72,9 +73,10 @@ public final class ItemContract {
         /* Additional constance for product item type */
         public static final int TYPE_CASUAL = 0;
         public static final int TYPE_FORMAL = 1;
-        public static final int TYPE_COTTON_SOCKS = 2;
-        public static final int TYPE_CARE_PRODUCTS = 3;
-        public static final int TYPE_BELTS_AND_WALLETS = 4;
+        public static final int TYPE_LIFE_STYLE = 2;
+        public static final int TYPE_COTTON_SOCKS = 3;
+        public static final int TYPE_CARE_PRODUCTS = 4;
+        public static final int TYPE_BELTS_AND_WALLETS = 5;
 
         public static final int ITEM_IN_STOCK = 1;
         public static final int ITEM_OUT_STOCK = 0;
@@ -89,10 +91,7 @@ public final class ItemContract {
          * Returns whether or not the given availability is {@link #ITEM_IN_STOCK}, {@link #ITEM_OUT_STOCK},
          */
         public static boolean isValidAvailability(int availability) {
-            if (availability == ITEM_OUT_STOCK || availability == ITEM_IN_STOCK) {
-                return true;
-            }
-            return false;
+            return availability == ITEM_OUT_STOCK || availability == ITEM_IN_STOCK;
         }
     }
 
