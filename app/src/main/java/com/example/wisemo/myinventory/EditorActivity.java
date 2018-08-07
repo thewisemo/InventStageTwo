@@ -374,6 +374,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                 TextUtils.isEmpty(itemQuantityString) ||
                 TextUtils.isEmpty(itemSupplierPhoneString) ||
                 TextUtils.isEmpty(itemSupplierString)) {
+            Toast.makeText(this, "You must insert all Item information, Please try again", Toast.LENGTH_SHORT).show();
             // Since no fields were modified, we can return early without creating a new item.
             // No need to create ContentValues and no need to do any ContentProvider operations.
             return;
@@ -440,6 +441,8 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                         Toast.LENGTH_SHORT).show();
             }
         }
+        // Exit activity
+        finish();
     }
 
 
@@ -472,8 +475,6 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             case R.id.action_save:
                 // Save product item to database
                 saveItem();
-                // Exit activity
-                finish();
                 return true;
             // Respond to a click on the "Delete" menu option
             case R.id.action_delete:
